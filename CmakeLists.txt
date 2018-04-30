@@ -1,0 +1,17 @@
+# This is for Visual Studio 2017 (Community) project files
+# Visual Studio Community provides a reasonable IDE for Windows platforms.
+
+cmake_minimum_required(VERSION 3.11.1)
+
+# We keep some macros here
+set (CMAKE_MODULE_PATH "${CMAKE_MODULEPATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(ejtagmacros)
+
+
+project( Ejtag )
+
+add_subdirectory( libplatform )
+#add_subdirectory( apps/win32 )
+
+
+

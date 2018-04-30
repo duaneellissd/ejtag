@@ -69,8 +69,12 @@
  *   line of text by using space character in column 0.
  */
 
+namespace Ejtag {
+
+}
 #define CMD_MAX_LINE  128
-class EjtagCmdInfo;
+
+class CmdInfo;
 
 /* all incomming commands are processed via table look up */
 struct cmd_table_entry {
