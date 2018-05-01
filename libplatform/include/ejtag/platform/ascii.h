@@ -1,6 +1,12 @@
 #if !defined(EJTAG_PLATFOR_ASCII_H)
 #define EJTAG_PLATFOR_ASCII_H
 
+/**
+* \defgroup ASCII_DEFINES Various #defines for ASCII symbols
+* @{
+*/
+
+
 #define ASCII_NUL	0x000
 #define ASCII_NULL	(ASCII_NUL) /* alternate spelling */
 #define ASCII_CTRL_ATSIGN  ASCII_NULL
@@ -113,6 +119,7 @@
 
 #define ASCII_DEL          0x07f
 
+/** @} */
 
 #endif
 

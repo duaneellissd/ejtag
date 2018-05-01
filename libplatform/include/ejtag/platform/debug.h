@@ -1,5 +1,10 @@
 #include "ejtag/platform/config.h"
 
+/** 
+ * \defgroup DEBUG Debug Functions
+ * @{
+ */
+
 EXTERN_C_BEGIN ;
 
 /* Debug Print routines, simple and complex
@@ -76,6 +81,9 @@ void DEBUG_colon_space(void);
 /** prints a string a colon and a space, ie: printf("%s: ", str ); */
 void DEBUG_str_colon_space( const char *s );
 
+/** prints a string a colon and a space, and a 0x prefix ie: printf("%s: 0x", str ); */
+void DEBUG_str_colon_spaceX(const char *s);
+
 /** prints a single colon char */
 void DEBUG_colon(void);
 
@@ -93,6 +101,9 @@ void DEBUG_hex32(uint32_t value);
 
 /** print 16 hex digits */
 void DEBUG_hex64(uint64_t value);
+
+/** Print an intptr_t as hex */
+void DEBUG_intptr(intptr_t value);
 
 /** prints an integer */
 void DEBUG_int(int integer);
@@ -139,7 +150,7 @@ void DEBUG_str_hex64(const char *str, uint64_t value);
 /** printf(), to the platform specific debug output
  * Note the return value is the number of bytes transmitted
  * The return value does not account for cr/lf mapping.
- * meaning: The fmt specifier may contain: "\n" the return
+ * meaning: The format specifier may contain: "\n" the return
  * value would be N+1
  */
 int DEBUG_printf(const char *fmt, ...);
@@ -150,6 +161,71 @@ int DEBUG_vprintf(const char *fmt, va_list ap);
 int DEBUG_snprintf( char *buf, size_t bufsiz, const char *fmt, ... );
 
 int DEBUG_vsnprintf( char *buf, size_t bufsiz, const char *fmt, va_list ap );
+
+/** 
+ * ASCII memory dump data structure.
+ * For more details see:
+ *  - \ref DEBUG_memdump32 
+ *  - \ref DEBUG_memdump64
+ *  - \ref DEBUG_memdump_line
+ */
+struct debug_memdump_line {
+    /** Address to print in column */
+    intptr_t address;
+
+    /* to print a 32bit address, specify 4, to print 64bit specify 8 */
+    size_t   sizeof_address;
+
+    /** The data to print */
+    const void *data;
+
+    /** How many bytes to print */
+    size_t n;
+
+    /** the generated ASCII text is put here */
+    char buffer[128];
+
+    /** for internal use */
+    int  buffer_idx;
+};
+
+/**
+ * Memory Hex Dump, with a 32bit address field
+ *
+ * \param address - the address to print
+ * \param data    - data pointer
+ * \param n       - number of bytes to print.
+ *
+ * Also see \ref DEBUG_memdump64, and/or \ref debug_memdump_info
+ */
+void DEBUG_memdump32(intptr_t address, const void *data, size_t n);
+
+/**
+* Memory Hex Dump, with a 32bit address field
+*
+* \param address - the address to print
+* \param data    - data pointer
+* \param n       - number of bytes to print.
+*
+* Also see \ref DEBUG_memdump64, and/or \ref debug_memdump_info
+*/
+void DEBUG_memdump64(intptr_t address, const void *data, size_t n);
+
+/**
+ * Workhorse for \ref DEBUG_memdump32 and \ref DEBUG_memdump64
+ *
+ * \param pInfo data structure with printing details.
+ *
+ * Set the required elements and call this to produce
+ * the line of ASCII text to print.
+ *
+ * Upon return, the values in the structure are updated
+ * to effectively "point at" the next line to format.
+ *
+ * NOTE: When printing with a non 16byte aligned starting address
+ * you may need to call this function more then once.
+ */
+void DEBUG_memdump_line(struct debug_memdump_line *pInfo);
 
 
 #define DEBUG_KEY_UARROW	0x0100
@@ -201,6 +277,7 @@ struct dbg_cmdline {
  */
 void DEBUG_readline(struct dbg_cmdline *pCmdLine);
 
+/** @} */
 
 EXTERN_C_END;
 

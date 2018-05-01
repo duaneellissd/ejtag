@@ -8,4 +8,4 @@
  *
  * \param main application entry point.
  */
-EXTERN_C void application_main(int argc, char **argv, void(*app_main)(void) );
+EXTERN_C int application_main(int argc, char **argv, void(*app_main)(void) );

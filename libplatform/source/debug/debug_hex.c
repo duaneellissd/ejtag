@@ -34,7 +34,7 @@ void DEBUG_int(int value)
 	}
 	buf[INT_BUF_SIZE-1] = 0;
 	buf[INT_BUF_SIZE-2] = '0';
-	x = INT_BUF_SIZE-2;
+	x = INT_BUF_SIZE-1;
 
 	while (value) {
 		x--;
@@ -69,4 +69,15 @@ void DEBUG_hex64(uint64_t value)
 
 	DEBUG_hex32(((uint32_t)vh));
 	DEBUG_hex32(((uint32_t)vl));
+}
+
+/** Print an intptr as hex */
+void DEBUG_intptr(intptr_t value)
+{
+	if (sizeof(value) == 4) {
+		DEBUG_hex32((uint32_t)(value));
+	}
+	else {
+		DEBUG_hex64((uint64_t)(value));
+	}
 }

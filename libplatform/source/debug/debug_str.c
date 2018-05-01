@@ -18,28 +18,28 @@ int DEBUG_puts(const char *s)
 
 void DEBUG_str_hex8(const char *str, uint32_t value)
 {
-	DEBUG_str_colon_space(str);
+	DEBUG_str_colon_spaceX(str);
 	DEBUG_hex8(value);
 	DEBUG_newline();
 }
 
 void DEBUG_str_hex16(const char *str, uint32_t value)
 {
-	DEBUG_str_colon_space(str);
+	DEBUG_str_colon_spaceX(str);
 	DEBUG_hex16(value);
 	DEBUG_newline();
 }
 
 void DEBUG_str_hex32(const char *str, uint32_t value)
 {
-	DEBUG_str_colon_space(str);
+	DEBUG_str_colon_spaceX(str);
 	DEBUG_hex32(value);
 	DEBUG_newline();
 }
 
 void DEBUG_str_hex64(const char *str, uint64_t value)
 {
-	DEBUG_str_colon_space(str);
+	DEBUG_str_colon_spaceX(str);
 	DEBUG_hex64(value);
 	DEBUG_newline();
 }

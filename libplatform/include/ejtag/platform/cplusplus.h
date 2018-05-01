@@ -1,6 +1,8 @@
 #if !defined(EJTAG_PLATFORM_CPLUSPLUS_H)
 #define EJTAG_PLATFORM_CPLUSPLUS_H
-/*
+/**
+ * \defgroup  CPLUSPLUS Macros to help with C++ and C interworking.
+ * @{
  * Common macros to handle C and C++ extern 
  */
 
@@ -17,5 +19,7 @@
 #define EXTERN_C_END 
 #define EXTERN_C  extern 
 #endif
+
+/** @} */
 
 #endif /* EJTAG_PLATFORM_CPLUSPLUS_H */

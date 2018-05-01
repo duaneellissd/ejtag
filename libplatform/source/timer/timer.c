@@ -22,7 +22,7 @@ int TIMER_mSecsRemain(intptr_t token, int timeoutperiod)
     return r;
 }
 
-int TIMER_timerIsExpired(intptr_t token, int timeoutperiod)
+int TIMER_isExpired(intptr_t token, int timeoutperiod)
 {
     if (TIMER_mSecsRemain(token, timeoutperiod) <= 0) {
         return 1;

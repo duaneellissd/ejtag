@@ -6,10 +6,17 @@ void DEBUG_hyphen(void)
 	DEBUG_putc('-');
 }
 
+
 void DEBUG_str_colon_space(const char *s)
 {
 	DEBUG_puts_no_nl(s);
 	DEBUG_colon_space();
+}
+
+void DEBUG_str_colon_spaceX(const char *s)
+{
+	DEBUG_puts_no_nl(s);
+	DEBUG_write(": 0x", 4);
 }
 
 void DEBUG_colon_space(void)
