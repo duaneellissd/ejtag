@@ -36,3 +36,12 @@
 # Typical build directory for CMake
 /_build
 
+# Python
+__pycache__
+*.pyc
+
+# Editor files, emacs, etc
+*~
+*.bak
+# Emacs lock files
+\#*
