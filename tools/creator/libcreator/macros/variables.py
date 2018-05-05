@@ -1,38 +1,37 @@
 from ..utils import FrozenClass
+from ..utils import FileLocation
+from ..utils import FileLocation_builtin
+from .value import MacroValue
 
-class VariableValue( FrozenClass ):
-    """This represents a variable"""
-    def __init__(self,name,value, location):
-        FrozenClass.__init__(self)
-        self.name = name
-        self.value = value
-        self.used = False
-        self.external_def = False
-        self.donot_expand = False
-        if location is not None:
-            location = location.clone()
-        self.location = location
-        self._freeze()
-
-class Variables(object):
-    """Variables used in a macro engine"""
+class MacroVariables(FrozenClass):
+    """
+    This represents a collection (dictionary?) of macros 
+    that are used by the macro engine.
+    """
 
     def __init__(self, engine):
         FrozenClass.__init__(self)
         self.variables = dict()
+        self._freeze()
 
-    def define( self, name, value, location = "Unknown" ):
-        """Define a variable with a value, defined at some location"""
-        var = VariableValue( name,value,location)
+    def define( self, name, value, location = None ):
+        '''
+        Define a variable with a value
+
+        Location is a string or None, indicating where it was defined.
+        It could be a file with a line number, ie: "foo.txt:1234"
+        Or a string like "command-line", or "internal"
+        '''
+        var = MacroValue( name,value,location)
         self.variables[ name ] = var
         return var
 
     def external_def( self, name, location = None ):
         """
-        Mark the variable as externally defined
+        Add or mark an existing variable as externally defined
 
         What this means is the variable can never be expanded
-        and is known out side of this macro system.
+        and its value is known only by an out side thing.
 
         If this macro exists and a fully evaluated name
         is required then an undefined error has occurred.
@@ -43,14 +42,10 @@ class Variables(object):
             var = self.define( name, None, location )
         var.external_def = True
 
-    def donot_expand( self, name, location = None ):
+    def donot_expand( self, name, value = None, location = None ):
         """
-        Some macros should not be expanded unless explicitly requested.
+        Add or mark an existing variable as a do-not-expand value.
         
-        An example might be a macro in a makefile, here in this tool
-        we might know the value of the macro, but we don't want to
-        resolve the macro at this time.
-
         Other times we might require the name be fully resolved.
 
         """
@@ -63,7 +58,70 @@ class Variables(object):
         """Return true if this macro name exists."""
         return name in self.variables
 
-    def lookup( self, name ):
+    def get( self, name, default_value = None ):
         """Lookup and return this variables value"""
-        self.variables.get( name, default )
-       
+        return self.variables.get( name, default_value )
+
+def selftest_macrovariables():
+    print("Test: %s" % __file__ )
+    vars = MacroVariables( None )
+    vars.define("Arthur", "Dent", FileLocation("HitchHiker",42))
+    assert( vars.exists('Arthur' ) )
+    # here we do not define a location
+    vars.define("HeartOfGold", "Ship" )
+    # this has a location
+    vars.donot_expand("AnswerToLife","42", FileLocation_builtin() )
+    # this does not have a location, Deep Thought is working on it
+    vars.external_def("The Question" )
+
+    assert( vars.exists( 'Arthur' ))
+    assert( not vars.exists('Dent' ))
+    v = vars.get('Arthur')
+    assert( v.value == "Dent")
+    assert( str(v.location) == 'HitchHiker:42')
+    assert( v.name == 'Arthur' )
+    assert( not v.external_def )
+    assert( not v.donot_expand )
+
+    # test the boolean flags for variables
+    v = vars.get('HeartOfGold')
+    assert( v.value == "Ship")
+    assert(v.location == None)
+    assert( not v.external_def )
+    assert( not v.donot_expand )
+    # change this
+    vars.donot_expand("HeartOfGold")
+    assert( v.donot_expand )
+    assert( not v.external_def )
+    vars.external_def( "HeartOfGold" )
+    assert( v.external_def )
+
+    # lookup the unknown
+    s = "foo bar abc"
+    v = vars.get('i-do-not-exist', s )
+    assert( v == s )
+    
+    vars.donot_expand("NewVar1")
+    v = vars.get("NewVar1")
+    assert( v.value == None )
+    assert( v.location == None )
+    assert( v.donot_expand )
+    assert( v.external_def == False )
+
+    vars.external_def("NewVar2")
+    v = vars.get("NewVar2")
+    assert( v.value == None )
+    assert( v.location == None )
+    assert( v.donot_expand == False)
+    assert( v.external_def == True )
+
+    assert( len( vars.variables ) == 6 )
+    # redefine a variable
+    vars.define("Arthur", "See the 1981 movie")
+    # no more or less variables.
+    assert( len( vars.variables ) == 6 )
+    # and the value was replaced..
+    v = vars.get( "Arthur" )
+    assert( v.value == "See the 1981 movie")
+
+    print("Success: %s" % __file__ )

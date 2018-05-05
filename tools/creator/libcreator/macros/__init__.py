@@ -1,5 +1,6 @@
 
 
-from .engine import Engine
-from .variables import Variables
-from .result import Result
+from .engine import MacroEngine
+from .variables import MacroVariables
+from .result import MacroResult
+from .parser import MacroParser
