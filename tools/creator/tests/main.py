@@ -8,7 +8,10 @@ import os
 # often execute where the CWD is not this directory.
 # So we use __file__ (the abs path of this file) to calculate accordingly
 PARENT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+print("PARENTDIR: %s" % PARENT_DIR )
+print("os.cwd: %s" % os.getcwd() )
 sys.path.append( PARENT_DIR )
+print("path = %s" % sys.path)
 
 import libcreator
 
