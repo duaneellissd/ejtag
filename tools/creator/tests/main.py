@@ -12,6 +12,7 @@ print("PARENTDIR: %s" % PARENT_DIR )
 print("os.cwd: %s" % os.getcwd() )
 sys.path.append( PARENT_DIR )
 print("path = %s" % sys.path)
+os.system("ls -l %s" % PARENT_DIR )
 
 import libcreator
 
