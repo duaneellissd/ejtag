@@ -386,7 +386,8 @@ def subtest_find_ok():
     p = MacroParser( "${this \\${that}}" )
     p.find_macro()
     assert( '' == p.text_before() )
-    s = p.macro_text()
+    s = p.parts()
+    s = s[2]
     assert( '${this \\${that}' == s)
     assert( '}' == p.text_after() )
     # now test with the internal macro properly escaped
