@@ -7,12 +7,10 @@ import os
 # But we do not do ".." because some IDES (Visual Stupid)
 # often execute where the CWD is not this directory.
 # So we use __file__ (the abs path of this file) to calculate accordingly
-PARENT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-print("PARENTDIR: %s" % PARENT_DIR )
-print("os.cwd: %s" % os.getcwd() )
-sys.path.append( PARENT_DIR )
-print("path = %s" % sys.path)
-os.system("ls -l %s" % PARENT_DIR )
+_f=os.path.abspath(__file__)
+_dhere = os.path.dirname(_f)
+_dparent = os.path.dirname(_dhere)
+sys.path.append( _dparent )
 
 import libcreator
 
