@@ -56,5 +56,8 @@ class libcreator_unittest( unittest.TestCase ):
     def test_001200_macrovariables(self):
         libcreator.macros.variables.selftest_macrovariables()
 
+    def test_001300_macroengine(self):
+        libcreator.macros.engine.seftest_macroengine()
+
 if __name__ == '__main__':
     unittest.main()

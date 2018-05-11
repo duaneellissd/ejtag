@@ -10,12 +10,15 @@ class MacroResult(FrozenClass):
         FrozenClass.__init__(self)
         # what engine owns this.
         self.engine = engine
-        # Where is this macro being invoked.
-        self.location = location
         # What is the transformation history
         self.history = []
+        # Where is this macro being invoked.
+        self.location = location
+        if self.location != None:
+            self.history.append("%s: Evaluating" % location )
+        self.history.append("start: %s" % input)
         # Was there an error?
-        self.error_msg = ""
+        self.error_msg = None
         # What is the result of the macro
         self.result = ""
         # Input text
@@ -37,11 +40,11 @@ class MacroResult(FrozenClass):
         '''
         Set the error message, do not override an existing message.
         '''
-        if len(self.error)==0:
-            self.error = msg
+        if self.error_msg is None:
+            self.error_msg = msg
 
     def history_as_str( self ):
         '''
         Return the transformation history as a giant string.
         '''
-        return "\n".join( self.history ) + '\n'
+        return "\n".join( self.history )

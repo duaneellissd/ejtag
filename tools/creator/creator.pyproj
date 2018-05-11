@@ -32,6 +32,9 @@
     <Compile Include="libcreator\macros\__init__.py" />
     <Compile Include="libcreator\utils\filelocation.py" />
     <Compile Include="libcreator\utils\frozenclass.py" />
+    <Compile Include="libcreator\utils\platform_vars.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="libcreator\utils\__init__.py" />
     <Compile Include="libcreator\__init__.py" />
     <Compile Include="tests\main.py">

@@ -28,9 +28,10 @@ class MacroParser(FrozenClass):
     To mark/ignore the text we convert the text into an array of uint16
     then to mark, we add 0x100 to each value, later we mask the values
     '''
-    def __init__(self,input=None,location=None):
+    def __init__(self,engine,input=None,location=None):
         # The this seems faster
         FrozenClass.__init__(self)
+        self.engine = engine
         self.data = array.array('h')
         # initialize variables
         self._fail()
@@ -38,6 +39,13 @@ class MacroParser(FrozenClass):
         if location is not None:
             location = location.clone()
         self.location = location
+        self.error_msg = None
+        self.text_before = ''
+        self.text_macro = ''
+        self.text_after = ''
+        self.mark_before = []
+        self.mark_macro = []
+        self.mark_after = []
         # Lock the class.
         self._freeze()
         if input is not None:
@@ -47,7 +55,7 @@ class MacroParser(FrozenClass):
         if writable is None:
             writable = sys.stdout
         
-        parts = self.parts(0,len(self.data))
+        parts = self._parts(0,len(self.data))
         s = parts[0] + parts[2] + parts[4]
         writable.write("value: %s\n" % s )
         tmp = self.rhs - self.lhs
@@ -60,7 +68,7 @@ class MacroParser(FrozenClass):
     def debug_markout(self,writable=None):
         if writable is None:
             writable = sys.stdout
-        parts = self.parts()
+        parts = self._parts()
         s = parts[0] + parts[2] + parts[4]
         m = parts[1] + parts[3] + parts[5]
         m = ''.join( map( lambda x: '*' if x else ' ',m))
@@ -78,6 +86,7 @@ class MacroParser(FrozenClass):
         '''Restart scanning at the start of the string'''
         self.nested = False
         self.set_range(0,len(self.data))
+        self.error_msg = None
 
     def as_str2( self, lhs, rhs ):
         '''
@@ -92,10 +101,39 @@ class MacroParser(FrozenClass):
         '''
         Return the text as a string, all text between LHS and RHS.
         '''
-        parts = self.parts(lhs,rhs)
+        parts = self._parts(lhs,rhs)
         return parts[2]
 
-    def parts( self, lhs = None, rhs = None ):
+    def replace( self, result, newtext ):
+        s = self.text_before + self.text_macro + self.text_after
+        result.history.append(" txt: %s" % s )
+        s = ''
+        s += ' ' * len(self.text_before)
+        s += '*' * len(self.text_macro)
+        s += ' ' * len(self.text_after)
+        result.history.append("mark: %s" % s )
+        result.history.append("from: %s" % self.text_macro)
+        result.history.append("  to: %s" % newtext )
+        s = self.text_before + newtext + self.text_after 
+        result.history.append(" new: %s" % s )
+        self.set_string(s)
+        m = self.mark_before[:]
+        m += [False] * len(newtext)
+        m += self.mark_after
+        for loc,value in enumerate(m):
+            if value:
+                self.data[loc] += 0x100
+    def update_parts( self, lhs = None, rhs = None ):
+        parts = self._parts(lhs,rhs)
+        # save this
+        self.text_before = parts[0]
+        self.text_macro = parts[2]
+        self.text_after = parts[4]
+        self.mark_before = parts[1]
+        self.mark_macro = parts[3]
+        self.mark_after = parts[5]
+
+    def _parts( self, lhs = None, rhs = None ):
         '''
         This returns a tuple of 6 elements (3 pairs of 2)
 
@@ -138,30 +176,6 @@ class MacroParser(FrozenClass):
         self.lhs = lhs
         self.rhs = rhs
 
-    def text_before(self):
-        '''Return the text BEFORE the macro invocation.'''
-        if self.open_loc < 0:
-            return ''
-        foo = self.parts()
-        return foo[0]
-
-    def text_macro(self):
-        '''
-        Return the text of (WITHIN) the macro invocation.
-        This does NOT include the opening ${ and closing }
-        '''
-        if self.open_loc < 0:
-            return ''
-        foo = self.parts()
-        return foo[2]
-
-    def text_after(self):
-        '''Return the text AFTER the macro invocation.'''
-        if self.open_loc < 0:
-            return ''
-        foo = self.parts()
-        return foo[4]
-    
     def mark_range( self, lhs, rhs ):
         '''
         This marks out a range so that is not recognizable as macro.
@@ -172,7 +186,12 @@ class MacroParser(FrozenClass):
     def find_macro( self ):
         '''This find the next macro in the data'''
         self.find_open()
+        if self.open_loc < 0:
+            return
         self.find_close()
+        if self.close_loc < 0:
+            return
+        self.update_parts()
 
     def find_close( self ):
         '''
@@ -183,8 +202,8 @@ class MacroParser(FrozenClass):
         At the start, lhs the opening dollar sign.
         '''
         # if we did not find an open, we should stop now
+        self.close_loc = -1
         if self.open_loc < 0:
-            self._fail()
             return
 
         #We advance 2, to skip over DOLLAR LBRACE
@@ -193,6 +212,7 @@ class MacroParser(FrozenClass):
             self._find_close()
         except:
             # Something went really wrong
+            self.error_msg = "Syntax, col: %d" % self.open_loc
             self._fail()
 
     def _find_close(self):
@@ -223,9 +243,11 @@ class MacroParser(FrozenClass):
                 self.lhs = self.lhs + 2
                 continue
             else:
-                # TBD: Do we want to call this a syntax error?
-                self.lhs += 1
+                # This is a syntax error, stray dollar sign
+                self.error_msg = "Syntax col: %d, stray $" % self.lhs
+                return
         # Fall off the end, we did not find it
+        self.error_msg = "Syntax col: %d, no close" % self.open_loc
         self._fail()
 
     def find_open( self ):
@@ -273,7 +295,7 @@ class MacroParser(FrozenClass):
 
 def subtest_slice_and_dice():
     #            0123456789012
-    p = MacroParser()
+    p = MacroParser(None)
     p.set_string("the room of wonder")
     # test 1, from left side
     s = p.as_str2(0,3)
@@ -293,7 +315,7 @@ def subtest_slice_and_dice():
     p = None
 
 def test_find( s, expect_o, expect_c ):
-    p = MacroParser()
+    p = MacroParser(None)
     print("search: %s, expect: %d,%d" % (s,expect_o,expect_c))
     p.set_string( s )
     p.find_macro()
@@ -308,10 +330,9 @@ def test_find( s, expect_o, expect_c ):
     b4 = s[0:expect_o]
     m  = s[expect_o:expect_c]
     af = s[expect_c:]
-    parts = p.parts()
-    assert( b4 == parts[0])
-    assert( m  == parts[2])
-    assert( af == parts[4])
+    assert( b4 == p.text_before)
+    assert( m  == p.text_macro)
+    assert( af == p.text_after)
         
     return p
 
@@ -323,7 +344,7 @@ def subtest_find_errors():
     # syntax errors
     for s in ('${', '${nope${pe))' ):
         print("search: %s, expect: 0, then -1" % s)
-        p = MacroParser()
+        p = MacroParser(None)
         p.set_string(s)
         # here we are testing that we FIND the open
         p.find_open()
@@ -333,13 +354,13 @@ def subtest_find_errors():
         assert( p.open_loc == -1 )
         p = None
         
-    p = MacroParser()
-    p.set_string("duane ${here")
-    print("Search: %s, expect open at 6, then fail" % p.as_str())
+    p = MacroParser(None)
+    p.set_string("this ${here")
+    print("Search: %s, expect open at 5, then fail" % p.as_str())
     # here we are testing the open works then (below...)
     p.find_open()
     #p.debug_print()
-    assert(p.open_loc == 6 )
+    assert(p.open_loc == 5 )
     p.find_close()
     # and the close errors out
     assert(p.open_loc == -1)
@@ -359,9 +380,9 @@ def subtest_find_ok():
     p.find_macro()
     assert( p.open_loc == 8 )
     assert( p.close_loc == 15 )
-    assert( p.text_before() == '${this} ')
-    assert( p.text_macro() == '${that}')
-    assert( p.text_after() == '')
+    assert( p.text_before == '${this} ')
+    assert( p.text_macro == '${that}')
+    assert( p.text_after == '')
 
     # test nested macro
     # we already did nested error
@@ -370,41 +391,40 @@ def subtest_find_ok():
     p.set_string('${this ${that}}')
     p.mark_range( 7, 14 )
     p.debug_markout()
-    p.find_open()
-    p.find_close()
+    p.find_macro()
     assert( p.open_loc == 0 )
     assert( p.close_loc == 15 )
-    assert( p.text_before() == '' )
-    assert( p.text_after() == '' )
-    s = p.text_macro()
+    assert( p.text_before == '' )
+    assert( p.text_after == '' )
+    s = p.text_macro
     assert( s == '${this ${that}}')
     # test a nested escaped macro
     # This is NOT wrong, because the closing brace
     # after the last t in that is NOT escaped it does
     # serve as the closing brace for the opening brace
     # that is what we are testing here.
-    p = MacroParser( "${this \\${that}}" )
+    p = MacroParser( None, "${this \\${that}}" )
     p.find_macro()
-    assert( '' == p.text_before() )
-    s = p.parts()
-    s = s[2]
+    assert( '' == p.text_before )
+    s = p.text_macro
     assert( '${this \\${that}' == s)
-    assert( '}' == p.text_after() )
+    assert( '}' == p.text_after )
     # now test with the internal macro properly escaped
-    p = MacroParser( "${this \\${that\\}}")
+    p = MacroParser( None, "${this \\${that\\}}")
     p.find_macro()
-    assert('' == p.text_before() )
-    assert('${this \\${that\\}}' == p.text_macro() )
-    assert('' == p.text_after() )
+    assert('' == p.text_before )
+    assert('${this \\${that\\}}' == p.text_macro )
+    assert('' == p.text_after )
 
 def selftest_parser():
-    # first test is that we can construct the clas...
+    # first test is that we can construct the class...
     print("test: %s" % __file__)
-    p = MacroParser()
+    p = MacroParser(None)
     p = None
     # now do other tests
     subtest_slice_and_dice()
     subtest_find_errors()
     subtest_find_ok()
     print("Success: %s" % __file__ )
+
 
