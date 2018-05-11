@@ -23,3 +23,7 @@ do
    fi
 done
 
+if [ -d .vs ]
+then
+   rm -rf ./.vs
+fi
