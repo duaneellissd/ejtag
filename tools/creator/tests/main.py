@@ -1,4 +1,4 @@
-
+#! /usr/bin/env python
 import unittest
 import sys
 import os
@@ -60,4 +60,7 @@ class libcreator_unittest( unittest.TestCase ):
         libcreator.macros.engine.seftest_macroengine()
 
 if __name__ == '__main__':
+    print("Using Python; %d.%d" % (sys.version_info[0], sys.version_info[1]))
     unittest.main()
+
+

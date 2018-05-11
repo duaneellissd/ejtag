@@ -15,5 +15,5 @@ matrix:
 
 
 script:
-    - which python && python --version && cd tools/creator/tests && python ./main.py
+    - which python && python --version && cd tools/creator/tests && ./main.py
 
