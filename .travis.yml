@@ -15,5 +15,5 @@ matrix:
 
 
 script:
-    - which python && python --version && cd tools/creator/tests && ./main.py
+    - bash ./.travis/run.sh
 
