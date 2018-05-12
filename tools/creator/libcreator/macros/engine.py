@@ -9,6 +9,24 @@ import tokenize
 import io
 import re
 
+if _python2:
+    import StringIO
+    import token
+    ENCODING = token.N_TOKENS+1
+    NUMBER = token.NUMBER
+    NAME = token.NAME
+    STRING = token.STRING
+    ENDMARKER = token.ENDMARKER
+    OP = token.OP
+
+if _python3:
+    NUMBER = tokenize.NUMBER
+    ENCODING = tokenize.ENCODING
+    NAME = tokenize.NAME
+    STRING = tokenize.STRING
+    ENDMARKER = tokenize.ENDMARKER
+    OP = tokenize.OP
+
 # The list below may seem bizarre, and not really required but 
 # they are here to support macro that need or want to call
 # a python function, for example: ${str.upper(${hello,world})}
@@ -56,7 +74,6 @@ import zipfile
 
 if _mswindows:
     import msvcrt
-    import winreg
     import winsound
     import posixpath
 else:
@@ -73,23 +90,29 @@ def NoneToBlank( str_none ):
     raise Exception("input is not None")
 
 class mytoken:
-    def __init__(self,t):
+    def __init__(self,*args):
         if _python3:
+            t = args[0]
             self.type  = t.type
-            if self.type == tokenize.NUMBER:
-                if '.' in t.string:
-                    self.value = float(t.string)
-                elif 'E+' in t.string:
-                    self.value = float(t.string)
-                elif 'E-' in t.string:
-                    self.value = float(t.string)
-                else:
-                    self.value = int(t.string)
-            else:
-                self.value = t.string
+            self.value = t.string
             self.lhs   = t.start[1]
             self.rhs   = t.end[1]
-
+        else:
+            # type Text start(lineno,lhs) end(lineno,rhs) line
+            self.type = args[0]
+            self.value = args[1]
+            self.lhs = args[2][1]
+            self.rhs = args[3][1]
+        if self.type != NUMBER:
+            return
+        if '.' in self.value:
+            self.value = float(self.value)
+        elif 'E+' in t.string:
+            self.value = float(self.value)
+        elif 'E-' in t.string:
+            self.value = float(self.value)
+        else:
+            self.value = int(self.value)
 
 class _tokenconverter():
     def __init__( self, engine, pstr, tlist ):
@@ -100,7 +123,7 @@ class _tokenconverter():
 
     def assert_ENCODING(self):
         t = self.tlist.pop(0)
-        assert( t.type == tokenize.ENCODING )
+        assert( t.type == ENCODING )
         
     def next_token(self):
         if len(self.tlist) == 0:
@@ -109,16 +132,16 @@ class _tokenconverter():
 
         # Remove token.
         t1 = self.tlist.pop(0)
-        if t1.type == tokenize.ENDMARKER:
+        if t1.type == ENDMARKER:
             return None
 
         # We should not have a comma here
-        if t1.value == ',' and (t1.type==tokenize.OP):
+        if t1.value == ',' and (t1.type==OP):
             self.engine._result.set_error("Illegal comma")
             return None
 
         # is this a number?
-        if t1.value in ('+','-') and (t1.type == tokenize.OP):
+        if t1.value in ('+','-') and (t1.type == OP):
             # next must be a number
             if len(self.tlist) == 0:
                 self.engine._result.set_error("missing number?")
@@ -127,13 +150,13 @@ class _tokenconverter():
             if t1.value=='-':
                 t1.value = -t2.value
             return t1.value
-        if t1.type == tokenize.NUMBER:
+        if t1.type == NUMBER:
             return t1.value
-        if t1.type == tokenize.STRING:
+        if t1.type == STRING:
             # remove the quote marks.
             return t1.value[1:-1]
 
-        if t1.type != tokenize.NAME:
+        if t1.type != NAME:
             self.engine._result.set_error("invalid: %s" % t1.value)
             return None
         while len(self.tlist) > 1:
@@ -412,7 +435,8 @@ class MacroEngine(FrozenClass):
         else:
             assert("What python is this")
         p = _tokenconverter( self, pstr, plist )
-        p.assert_ENCODING()
+        if _python3:
+            p.assert_ENCODING()
         params = list()
         need_param = False
         while True:
@@ -432,11 +456,18 @@ class MacroEngine(FrozenClass):
         result = list()
         rl = io.BytesIO( pstr.encode('utf-8') ).readline
         tlist = list( tokenize.tokenize( rl ) )
-        print("=======================================")
         for t in tlist:
             result.append( mytoken(t) )
         return result
 
+    def _parse_params_py2( self, pstr ):
+        result = list()
+        fh = StringIO.StringIO( pstr )
+        rl = fh.readline
+        def eater( *params ):
+            result.append( mytoken( *params ) )
+        tokenize.tokenize( rl, eater)
+        return result
 
 def test_nochange(e):
     # Test no change
